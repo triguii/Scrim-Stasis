@@ -1,0 +1,356 @@
+﻿<Page x:Class="LeagueDataParser.Pages.GameDetailsPage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LeagueDataParser.Pages"
+        mc:Ignorable="d"
+        Title="GameDetailsPage" d:DesignHeight="450" d:DesignWidth="800">
+    <Page.Resources>
+        <!-- Shared look for team colours -->
+        <Style x:Key="TeamRowBorder" TargetType="Border">
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Background" Value="#22E84057"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsBlueTeam}" Value="True">
+                    <Setter Property="Background" Value="#223B82F6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DamageBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Foreground" Value="#E84057"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsBlueTeam}" Value="True">
+                    <Setter Property="Foreground" Value="#3B82F6"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <TextBlock x:Name="StatusText" Text="Loading game..." Margin="16"
+                   TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <ScrollViewer x:Name="ContentPanel" Visibility="Collapsed"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16" Grid.IsSharedSizeScope="True">
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="← Back" Click="Back_Click" Padding="10,4"/>
+                    <Button x:Name="SaveButton" Content="Save JSON" Click="SaveJson_Click"
+            Padding="10,4" Margin="8,0,0,0" IsEnabled="False"/>
+                </StackPanel>
+
+                <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"
+                           Margin="0,12,0,0"/>
+                <TextBlock Text="{Binding Subtitle}" Opacity="0.7" Margin="0,0,0,16"/>
+                <!-- ===== Draft ===== -->
+                <TextBlock Text="Draft" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                <ItemsControl ItemsSource="{Binding Drafts}" Margin="0,0,0,20">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource TeamRowBorder}" Margin="0,0,8,0" Padding="12">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <StackPanel Margin="0,6,0,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasBans}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+
+                                        <TextBlock Text="Bans" Opacity="0.7" Margin="0,0,0,4"/>
+                                        <ItemsControl ItemsSource="{Binding BanIcons}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="IndianRed" BorderThickness="1"
+                                            Margin="0,0,6,6" CornerRadius="2">
+                                                        <Image Width="32" Height="32" Opacity="0.55"
+                                               Source="{Binding}"/>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ===== Players table ===== -->
+                <TextBlock Text="Players" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                <!-- Header row -->
+                <Grid Margin="8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*" MinWidth="140"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Lvl"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Kda"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Cs"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Gold"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Taken"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Vision"/>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Dmg"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="Opacity" Value="0.7"/>
+                            <Setter Property="Margin" Value="8,0"/>
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                        </Style>
+                    </Grid.Resources>
+                    <TextBlock Grid.Column="1" Text="Player" HorizontalAlignment="Left" Margin="12,0,0,0"/>
+                    <TextBlock Grid.Column="2" Text="Lvl"/>
+                    <TextBlock Grid.Column="3" Text="K/D/A"/>
+                    <TextBlock Grid.Column="4" Text="CS"/>
+                    <TextBlock Grid.Column="5" Text="Gold"/>
+                    <TextBlock Grid.Column="6" Text="Dmg taken"/>
+                    <TextBlock Grid.Column="7" Text="Vision score"/>
+                    <TextBlock Grid.Column="8" Text="Dmg dealt"/>
+                </Grid>
+
+
+                <ItemsControl ItemsSource="{Binding Players}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource TeamRowBorder}">
+                                <StackPanel>
+                                    <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*" MinWidth="140"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Lvl"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Kda"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Cs"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Gold"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Taken"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Vision"/>
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Dmg"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                            <Setter Property="Margin" Value="8,0"/>
+                                        </Style>
+                                    </Grid.Resources>
+
+                                    <Image Width="36" Height="36" Source="{Binding ChampionIconUrl}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                               HorizontalAlignment="Left" Margin="12,0,0,0"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Level}"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding Kda}"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding Cs}"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding Gold}"/>
+                                    <TextBlock Grid.Column="6" Text="{Binding DamageTaken}"/>
+                                    <TextBlock Grid.Column="7" Text="{Binding Vision}"/>
+                                    <TextBlock Grid.Column="8" Text="{Binding DamageText}"/>
+                                    
+                                </Grid>
+                                    <ItemsControl ItemsSource="{Binding Items}" Margin="52,6,0,2">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Width="28" Height="28" Margin="0,0,4,0"
+                                        CornerRadius="3" Background="#33000000"
+                                        BorderBrush="#33808080" BorderThickness="1">
+                                                    <Image Source="{Binding IconUrl}" Stretch="Uniform"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+
+                <!-- ===== Damage chart ===== -->
+                <TextBlock Text="Damage dealt to champions" FontSize="16" FontWeight="SemiBold"
+                           Margin="0,24,0,8"/>
+
+                <ItemsControl ItemsSource="{Binding ByDamage}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="36"/>
+                                    <ColumnDefinition Width="160"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Image Width="28" Height="28" Source="{Binding ChampionIconUrl}"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Name}"
+                                           VerticalAlignment="Center" Margin="8,0"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <ProgressBar Grid.Column="2"
+                                             Style="{StaticResource DamageBar}"
+                                             Value="{Binding Damage, Mode=OneWay}"
+                                             Maximum="{Binding DataContext.MaxDamage,
+                                                       RelativeSource={RelativeSource AncestorType=Page}}"/>
+                                <TextBlock Grid.Column="3" Text="{Binding DamageText}"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ===== Timeline ===== -->
+                <TextBlock Text="Timeline" FontSize="16" FontWeight="SemiBold" Margin="0,24,0,8"/>
+                <TextBlock x:Name="TimelineStatus" Text="Loading timeline..." Opacity="0.7" TextWrapping="Wrap"/>
+
+                <StackPanel x:Name="TimelinePanel" Visibility="Collapsed">
+                    <!-- ===== Gold difference by position (slider) ===== -->
+                    <TextBlock Text="Gold difference by position" Opacity="0.7" Margin="0,16,0,4"/>
+
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="SliderTimeText" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Slider x:Name="TimeSlider" Grid.Column="1"
+Minimum="0" Maximum="1" TickFrequency="1"
+IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+ValueChanged="TimeSlider_ValueChanged"/>
+                    </Grid>
+
+                    <TextBlock x:Name="TotalText" Opacity="0.7" Margin="0,0,0,8"/>
+
+                    <ItemsControl x:Name="MatchupList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="32"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Image Width="28" Height="28" Source="{Binding BlueIcon}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding BlueName}" Margin="8,0"
+               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- Diverging bar: blue grows left, red grows right -->
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <ProgressBar FlowDirection="RightToLeft" Height="16"
+                     Minimum="0" Maximum="{Binding Scale}"
+                     Value="{Binding BlueLead, Mode=OneWay}"
+                     Foreground="CornflowerBlue" Background="Transparent"
+                     BorderThickness="0"/>
+                                        <ProgressBar Grid.Column="1" Height="16"
+                     Minimum="0" Maximum="{Binding Scale}"
+                     Value="{Binding RedLead, Mode=OneWay}"
+                     Foreground="IndianRed" Background="Transparent"
+                     BorderThickness="0"/>
+                                        <Rectangle Grid.Column="1" Width="1" Height="22" Fill="Gray"
+                   HorizontalAlignment="Left"/>
+                                    </Grid>
+
+                                    <TextBlock Grid.Column="3" Text="{Binding RedName}" Margin="8,0"
+               HorizontalAlignment="Right" VerticalAlignment="Center"
+               TextTrimming="CharacterEllipsis"/>
+                                    <Image Grid.Column="4" Width="28" Height="28" Source="{Binding RedIcon}"/>
+
+                                    <TextBlock Grid.Column="5" Text="{Binding DiffText}" FontWeight="SemiBold"
+               HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Leader}" Value="1">
+                                                        <Setter Property="Foreground" Value="CornflowerBlue"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Leader}" Value="-1">
+                                                        <Setter Property="Foreground" Value="IndianRed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Team gold difference (blue minus red)" Opacity="0.7" Margin="0,0,0,4"/>
+                    <Border BorderBrush="Gray" BorderThickness="1" Height="240" CornerRadius="4">
+                        <Canvas x:Name="GoldCanvas" ClipToBounds="True"
+                SizeChanged="GoldCanvas_SizeChanged"/>
+                    </Border>
+
+                    <TextBlock Text="Key events" Opacity="0.7" Margin="0,16,0,4"/>
+                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="EventsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource TeamRowBorder}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="50"/>
+                                                <ColumnDefinition Width="32"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="32"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding Time}" Opacity="0.7" VerticalAlignment="Center"/>
+                                            <Image Grid.Column="1" Width="26" Height="26" Source="{Binding ActorIcon}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding Text}" Margin="8,0"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            <Image Grid.Column="3" Width="26" Height="26" Source="{Binding VictimIcon}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+                
+            </StackPanel>
+            
+        </ScrollViewer>
+    </Grid>
+</Page>
