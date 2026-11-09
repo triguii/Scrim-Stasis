@@ -1,7 +1,7 @@
-﻿<Application x:Class="LeagueDataParser.App"
+﻿<Application x:Class="ScrimStasis.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:LeagueDataParser"
+             xmlns:local="clr-namespace:ScrimStasis"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

@@ -1,5 +1,5 @@
-﻿using LeagueDataParser.Pages;
-using LeagueDataParser.ViewModels;
+﻿using ScrimStasis.Pages;
+using ScrimStasis.ViewModels;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace LeagueDataParser
+namespace ScrimStasis
 {
 
     /// <summary>

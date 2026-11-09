@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LeagueDataParser.ViewModels
+namespace ScrimStasis.ViewModels
 {
     public record ItemSlot(string? IconUrl);
 

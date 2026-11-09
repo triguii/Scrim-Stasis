@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 
-namespace LeagueDataParser.Helpers;
+namespace ScrimStasis.Helpers;
 
 public static class SavedGameFile
 {

@@ -1,5 +1,5 @@
-﻿using LeagueDataParser.Helpers;
-using LeagueDataParser.ViewModels;
+﻿using ScrimStasis.Helpers;
+using ScrimStasis.ViewModels;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace LeagueDataParser.Pages;
+namespace ScrimStasis.Pages;
 
 public partial class RecentGamesPage : Page
 {
@@ -33,7 +33,8 @@ public partial class RecentGamesPage : Page
     private async void LoadPageAsync()
     {
         Games.Clear();
-        foreach (var g in await LeagueClientData.GetRecentGamesAsync())
+        var gamesData = await LeagueClientData.GetRecentGamesAsync();
+        foreach (var g in gamesData)
             Games.Add(g);
     }
 

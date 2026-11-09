@@ -1,6 +1,6 @@
 ﻿using BlossomiShymae.Briar;
-using LeagueDataParser;
-using LeagueDataParser.ViewModels;
+using ScrimStasis;
+using ScrimStasis.ViewModels;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Windows;
@@ -11,10 +11,10 @@ using Microsoft.Win32;
 using System.Globalization;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using LeagueDataParser.Helpers;
-using LeagueDataParser.DataModels;
+using ScrimStasis.Helpers;
+using ScrimStasis.DataModels;
 
-namespace LeagueDataParser.Pages;
+namespace ScrimStasis.Pages;
 
 public partial class GameDetailsPage : Page
 {

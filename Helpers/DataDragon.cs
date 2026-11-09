@@ -1,7 +1,7 @@
 ﻿using System.Net.Http;
 using System.Net.Http.Json;
 
-namespace LeagueDataParser.Helpers;
+namespace ScrimStasis.Helpers;
 
 public static class DataDragon
 {

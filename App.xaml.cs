@@ -2,7 +2,7 @@
 using System.Data;
 using System.Windows;
 
-namespace LeagueDataParser
+namespace ScrimStasis
 {
     /// <summary>
     /// Interaction logic for App.xaml

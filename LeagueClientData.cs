@@ -1,6 +1,6 @@
 ﻿using BlossomiShymae.Briar;
 using BlossomiShymae.Briar.Rest;
-using LeagueDataParser.ViewModels;
+using ScrimStasis.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,10 +8,10 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using LeagueDataParser.DataModels;
-using LeagueDataParser.Helpers;
+using ScrimStasis.DataModels;
+using ScrimStasis.Helpers;
 
-namespace LeagueDataParser;
+namespace ScrimStasis;
 public static class LeagueClientData
 {
     private const int DELAY_TIME = 1000;
@@ -34,26 +34,33 @@ public static class LeagueClientData
 
     public static async Task<List<RecentGameItem>> GetRecentGamesAsync()
     {
+        try
+        {
+            var data = await client.GetFromJsonAsync<MatchHistoryResponse>(
+                "/lol-match-history/v1/products/lol/current-summoner/matches", Json);
 
-        var data = await client.GetFromJsonAsync<MatchHistoryResponse>(
-            "/lol-match-history/v1/products/lol/current-summoner/matches", Json);
 
-
-        return data?.Games.Games
-            .Where(g => g.Participants.Count > 0)
-            .Select(g =>
-            {
-                var p = g.Participants[0];
-                return new RecentGameItem
+            return data?.Games.Games
+                .Where(g => g.Participants.Count > 0)
+                .Select(g =>
                 {
-                    GameId = g.GameId,
-                    ChampionIconUrl = DataDragon.ChampioIconUrl(p.ChampionId),
-                    Kda = $"{p.Stats.Kills}/{p.Stats.Deaths}/{p.Stats.Assists}",
-                    Result = p.Stats.Win ? "Victory" : "Defeat",
-                    GameMode = g.GameMode,
-                    Duration = TimeSpan.FromSeconds(g.GameDuration).ToString(@"mm\:ss"),
-                };
-            }).ToList() ?? new();
+                    var p = g.Participants[0];
+                    return new RecentGameItem
+                    {
+                        GameId = g.GameId,
+                        ChampionIconUrl = DataDragon.ChampioIconUrl(p.ChampionId),
+                        Kda = $"{p.Stats.Kills}/{p.Stats.Deaths}/{p.Stats.Assists}",
+                        Result = p.Stats.Win ? "Victory" : "Defeat",
+                        GameMode = g.GameMode,
+                        Duration = TimeSpan.FromSeconds(g.GameDuration).ToString(@"mm\:ss"),
+                    };
+                }).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            return new();
+        }
+
     }
 
     public async static Task<String> GetGameDetailsAsync(long gameId)
