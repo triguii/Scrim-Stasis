@@ -6,6 +6,8 @@ the job for coaches and staff of analyzing and saving the data for scrim games
 
 The application uses Briar (https://github.com/BlossomiShymae/Briar) as an LCU API wrapper to acces Lol's client's endpoints.
 
+<img width="914" height="743" alt="Screenshot" src="https://github.com/user-attachments/assets/edce7157-ba70-4468-95a2-ed02490ca608" />
+
 ## Features
 
 ### Watch recent games 👁️
