@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Margin="16,16,16,0">
-            <Button Content="Import saved game..." Click="ImportJson_Click" Padding="10,4"/>
+            <Button Content="Import saved game" Click="ImportJson_Click" Padding="10,4"/>
         </StackPanel>
 
         <ListBox x:Name="RecentGamesList" Grid.Row="1"

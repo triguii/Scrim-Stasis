@@ -5,7 +5,11 @@ using System.Text.Json.Serialization;
 
 namespace ScrimStasis.DataModels;
 
-
+public class EventPosition
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+}
 public class MatchHistoryResponse
 {
     [JsonPropertyName("games")] public GamesWrapper Games { get; set; } = new();
@@ -38,6 +42,8 @@ public class Game
     public List<Team> Teams { get; set; } = new();
 
     public string GameVersion { get; set; } = string.Empty;
+    public int MapId { get; set; }                  // 11 = Summoner's Rift
+
 
 
 
@@ -62,7 +68,15 @@ public class Stats
     public int TotalMinionsKilled { get; set; }               
     public int NeutralMinionsKilled { get; set; }             
     public int TotalDamageDealtToChampions { get; set; }      
-    public int TotalDamageTaken { get; set; }                 
+    public int TotalDamageTaken { get; set; }
+    public int PhysicalDamageDealtToChampions { get; set; }
+    public int MagicDamageDealtToChampions { get; set; }
+    public int TrueDamageDealtToChampions { get; set; }
+    public int DamageSelfMitigated { get; set; }
+    public int TotalHeal { get; set; }
+    public int DamageDealtToTurrets { get; set; }
+    public int DamageDealtToObjectives { get; set; }
+    public int TimeCCingOthers { get; set; }
     public int VisionScore { get; set; }
     public int Item0 { get; set; }
     public int Item1 { get; set; }
@@ -130,4 +144,6 @@ public class TimelineEvent
     public string MonsterSubType { get; set; } = "";
     public string BuildingType { get; set; } = "";
     public string LaneType { get; set; } = "";
+    public EventPosition? Position { get; set; }    // new
+
 }

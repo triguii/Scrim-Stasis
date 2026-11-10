@@ -1,5 +1,7 @@
-﻿using System.Net.Http;
+﻿using System.Drawing;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Windows.Media.Imaging;
 
 namespace ScrimStasis.Helpers;
 
@@ -45,4 +47,7 @@ public static class DataDragon
         $"https://ddragon.leagueoflegends.com/cdn/{_latestVersion}/img/item/{itemId}.png";
     public static string ChampioIconUrl(int championId) =>
             $"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/{championId}.png";
+
+    public static BitmapImage MapIconUrl() =>
+        new BitmapImage(new Uri( $"https://ddragon.leagueoflegends.com/cdn/{_latestVersion}/img/map/map11.png"));
 }

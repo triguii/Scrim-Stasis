@@ -199,11 +199,21 @@
                 </ItemsControl>
 
 
-                <!-- ===== Damage chart ===== -->
-                <TextBlock Text="Damage dealt to champions" FontSize="16" FontWeight="SemiBold"
-                           Margin="0,24,0,8"/>
+                <!-- ===== Stat chart ===== -->
+                <Grid Margin="0,24,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <ItemsControl ItemsSource="{Binding ByDamage}">
+                    <TextBlock x:Name="StatChartTitle" FontSize="16" FontWeight="SemiBold"
+               VerticalAlignment="Center"/>
+                    <ComboBox x:Name="StatSelector" Grid.Column="1" Width="230"
+              DisplayMemberPath="Name"
+              SelectionChanged="StatSelector_SelectionChanged"/>
+                </Grid>
+
+                <ItemsControl x:Name="StatChart">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,3">
@@ -211,20 +221,19 @@
                                     <ColumnDefinition Width="36"/>
                                     <ColumnDefinition Width="160"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="90"/>
                                 </Grid.ColumnDefinitions>
 
                                 <Image Width="28" Height="28" Source="{Binding ChampionIconUrl}"/>
                                 <TextBlock Grid.Column="1" Text="{Binding Name}"
-                                           VerticalAlignment="Center" Margin="8,0"
-                                           TextTrimming="CharacterEllipsis"/>
+                           VerticalAlignment="Center" Margin="8,0"
+                           TextTrimming="CharacterEllipsis"/>
                                 <ProgressBar Grid.Column="2"
-                                             Style="{StaticResource DamageBar}"
-                                             Value="{Binding Damage, Mode=OneWay}"
-                                             Maximum="{Binding DataContext.MaxDamage,
-                                                       RelativeSource={RelativeSource AncestorType=Page}}"/>
-                                <TextBlock Grid.Column="3" Text="{Binding DamageText}"
-                                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                             Style="{StaticResource DamageBar}"
+                             Maximum="{Binding Scale}"
+                             Value="{Binding Value, Mode=OneWay}"/>
+                                <TextBlock Grid.Column="3" Text="{Binding ValueText}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -321,6 +330,41 @@ ValueChanged="TimeSlider_ValueChanged"/>
                         <Canvas x:Name="GoldCanvas" ClipToBounds="True"
                 SizeChanged="GoldCanvas_SizeChanged"/>
                     </Border>
+                    <!-- ===== Kill map ===== -->
+                    <StackPanel x:Name="KillMapPanel" Margin="0,16,0,0">
+                        <TextBlock Text="Kill map" Opacity="0.7" Margin="0,0,0,4"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ComboBox x:Name="KillFilter" Width="210" DisplayMemberPath="Name"
+                  SelectionChanged="KillFilter_Changed"/>
+                            <Slider x:Name="KillTimeSlider" Grid.Column="1" Margin="12,0"
+                Minimum="0" Maximum="1" TickFrequency="1"
+                IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                VerticalAlignment="Center"
+                ValueChanged="KillTimeSlider_ValueChanged"/>
+                            <TextBlock x:Name="KillTimeText" Grid.Column="2" VerticalAlignment="Center"
+                   MinWidth="80" TextAlignment="Right"/>
+                        </Grid>
+
+                        <Viewbox MaxWidth="560" HorizontalAlignment="Left" Stretch="Uniform">
+                            <Grid Width="512" Height="512" Background="#222222">
+                                <Image x:Name="MapImage" Stretch="Fill"/>
+                                <Canvas x:Name="KillMarkers"/>
+                            </Grid>
+                        </Viewbox>
+
+                        <TextBlock Margin="0,6,0,0" Opacity="0.8">
+        <Run Text="●" Foreground="CornflowerBlue"/><Run Text=" Blue team kill   "/>
+        <Run Text="●" Foreground="IndianRed"/><Run Text=" Red team kill   ·   "/>
+        <Run x:Name="KillCountRun"/>
+                        </TextBlock>
+                    </StackPanel>
 
                     <TextBlock Text="Key events" Opacity="0.7" Margin="0,16,0,4"/>
                     <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">

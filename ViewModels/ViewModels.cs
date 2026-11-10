@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ScrimStasis.DataModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -30,7 +31,9 @@ namespace ScrimStasis.ViewModels
         public int Vision { get; init; }
         public double Damage { get; init; }
         public string DamageText { get; init; } = "";
-        public List<ItemSlot> Items { get; init; } = new();   // new
+        public List<ItemSlot> Items { get; init; } = new();
+        public Stats RawStats { get; init; } = new(); 
+
 
     }
 
@@ -76,5 +79,18 @@ namespace ScrimStasis.ViewModels
         public double RedLead => Math.Max(-Diff, 0);
         public int Leader => Diff > 0 ? 1 : Diff < 0 ? -1 : 0;
         public string DiffText => Diff.ToString("+#,##0;-#,##0;0");
+    }
+
+    public record StatOption(string Name, Func<Stats, double> Selector, string Suffix = "");
+
+    public class ChartRow
+    {
+        public string ChampionIconUrl { get; init; } = "";
+        public string Name { get; init; } = "";
+        public int TeamId { get; init; }
+        public bool IsBlueTeam => TeamId == 100;
+        public double Value { get; init; }
+        public string ValueText { get; init; } = "";
+        public double Scale { get; init; } = 1;
     }
 }
