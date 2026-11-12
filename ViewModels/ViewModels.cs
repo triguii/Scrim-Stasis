@@ -64,6 +64,12 @@ namespace ScrimStasis.ViewModels
         public string? VictimIcon { get; init; }
         public int ActingTeamId { get; init; }
         public bool IsBlueTeam => ActingTeamId == 100;
+        public long Timestamp { get; init; }
+        public string? Kind { get; init; }             
+        public string? ObjectiveIconUrl { get; init; }
+
+        public int KillerId { get; init; }
+
     }
 
     public class MatchupRow

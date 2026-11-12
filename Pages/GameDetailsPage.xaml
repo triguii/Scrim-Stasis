@@ -28,7 +28,7 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsBlueTeam}" Value="True">
-                    <Setter Property="Foreground" Value="#3B82F6"/>
+                    <Setter Property="Foreground" Value="CornflowerBlue"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -78,7 +78,7 @@
                                             </Style>
                                         </StackPanel.Style>
 
-                                        <TextBlock Text="Bans" Opacity="0.7" Margin="0,0,0,4"/>
+                                        <TextBlock Text="Bans" Margin="0,0,0,4"/>
                                         <ItemsControl ItemsSource="{Binding BanIcons}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -89,7 +89,7 @@
                                                 <DataTemplate>
                                                     <Border BorderBrush="IndianRed" BorderThickness="1"
                                             Margin="0,0,6,6" CornerRadius="2">
-                                                        <Image Width="32" Height="32" Opacity="0.55"
+                                                        <Image Width="32" Height="32"
                                                Source="{Binding}"/>
                                                     </Border>
                                                 </DataTemplate>
@@ -114,7 +114,6 @@
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Kda"/>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Cs"/>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Gold"/>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="Taken"/>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Vision"/>
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Dmg"/>
                     </Grid.ColumnDefinitions>
@@ -131,9 +130,8 @@
                     <TextBlock Grid.Column="3" Text="K/D/A"/>
                     <TextBlock Grid.Column="4" Text="CS"/>
                     <TextBlock Grid.Column="5" Text="Gold"/>
-                    <TextBlock Grid.Column="6" Text="Dmg taken"/>
-                    <TextBlock Grid.Column="7" Text="Vision score"/>
-                    <TextBlock Grid.Column="8" Text="Dmg dealt"/>
+                    <TextBlock Grid.Column="6" Text="Vision score"/>
+                    <TextBlock Grid.Column="7" Text="Dmg dealt"/>
                 </Grid>
 
 
@@ -150,7 +148,6 @@
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Kda"/>
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Cs"/>
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Gold"/>
-                                        <ColumnDefinition Width="Auto" SharedSizeGroup="Taken"/>
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Vision"/>
                                         <ColumnDefinition Width="Auto" SharedSizeGroup="Dmg"/>
                                     </Grid.ColumnDefinitions>
@@ -170,9 +167,8 @@
                                     <TextBlock Grid.Column="3" Text="{Binding Kda}"/>
                                     <TextBlock Grid.Column="4" Text="{Binding Cs}"/>
                                     <TextBlock Grid.Column="5" Text="{Binding Gold}"/>
-                                    <TextBlock Grid.Column="6" Text="{Binding DamageTaken}"/>
-                                    <TextBlock Grid.Column="7" Text="{Binding Vision}"/>
-                                    <TextBlock Grid.Column="8" Text="{Binding DamageText}"/>
+                                    <TextBlock Grid.Column="6" Text="{Binding Vision}"/>
+                                    <TextBlock Grid.Column="7" Text="{Binding DamageText}"/>
                                     
                                 </Grid>
                                     <ItemsControl ItemsSource="{Binding Items}" Margin="52,6,0,2">
@@ -252,12 +248,21 @@
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Time slider -->
+                        <Canvas x:Name="ObjectiveMarkers" Grid.Column="1" Height="26" Margin="0,0,0,2"/>
 
                         <TextBlock x:Name="SliderTimeText" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                        <Slider x:Name="TimeSlider" Grid.Column="1"
-Minimum="0" Maximum="1" TickFrequency="1"
-IsSnapToTickEnabled="True" TickPlacement="BottomRight"
-ValueChanged="TimeSlider_ValueChanged"/>
+                        <Slider x:Name="TimeSlider" Grid.Row="1" Grid.Column="1"
+                                Minimum="0" Maximum="1" TickFrequency="1"
+                                IsSnapToTickEnabled="True" TickPlacement="BottomRight"
+                                ValueChanged="TimeSlider_ValueChanged"
+                                SizeChanged="TimeSlider_SizeChanged"/>
+                        
                     </Grid>
 
                     <TextBlock x:Name="TotalText" Opacity="0.7" Margin="0,0,0,8"/>
@@ -328,73 +333,87 @@ ValueChanged="TimeSlider_ValueChanged"/>
                     <TextBlock Text="Team gold difference (blue minus red)" Opacity="0.7" Margin="0,0,0,4"/>
                     <Border BorderBrush="Gray" BorderThickness="1" Height="240" CornerRadius="4">
                         <Canvas x:Name="GoldCanvas" ClipToBounds="True"
-                SizeChanged="GoldCanvas_SizeChanged"/>
+                                SizeChanged="GoldCanvas_SizeChanged"
+                                />
                     </Border>
-                    <!-- ===== Kill map ===== -->
-                    <StackPanel x:Name="KillMapPanel" Margin="0,16,0,0">
-                        <TextBlock Text="Kill map" Opacity="0.7" Margin="0,0,0,4"/>
+                    <!-- ===== Kill map + key events, side by side ===== -->
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="MapColumn" Width="1.2*"/>
+                            <ColumnDefinition Width="*" MinWidth="280"/>
+                        </Grid.ColumnDefinitions>
 
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                        <!-- Left: kill map -->
+                        <StackPanel x:Name="KillMapPanel" Margin="0,0,16,0">
+                            <Grid Height="28" Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <ComboBox x:Name="KillFilter" Width="210" DisplayMemberPath="Name"
-                  SelectionChanged="KillFilter_Changed"/>
-                            <Slider x:Name="KillTimeSlider" Grid.Column="1" Margin="12,0"
-                Minimum="0" Maximum="1" TickFrequency="1"
-                IsSnapToTickEnabled="True" TickPlacement="BottomRight"
-                VerticalAlignment="Center"
-                ValueChanged="KillTimeSlider_ValueChanged"/>
-                            <TextBlock x:Name="KillTimeText" Grid.Column="2" VerticalAlignment="Center"
-                   MinWidth="80" TextAlignment="Right"/>
-                        </Grid>
-
-                        <Viewbox MaxWidth="560" HorizontalAlignment="Left" Stretch="Uniform">
-                            <Grid Width="512" Height="512" Background="#222222">
-                                <Image x:Name="MapImage" Stretch="Fill"/>
-                                <Canvas x:Name="KillMarkers"/>
+                                <TextBlock Text="Kill map" Opacity="0.7" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="KillTimeText" Grid.Column="1" Margin="12,0"
+               Opacity="0.7" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="KillFilter" Grid.Column="2" Width="190"
+              DisplayMemberPath="Name" VerticalAlignment="Center"
+              SelectionChanged="KillFilter_Changed"/>
                             </Grid>
-                        </Viewbox>
 
-                        <TextBlock Margin="0,6,0,0" Opacity="0.8">
-        <Run Text="●" Foreground="CornflowerBlue"/><Run Text=" Blue team kill   "/>
-        <Run Text="●" Foreground="IndianRed"/><Run Text=" Red team kill   ·   "/>
-        <Run x:Name="KillCountRun"/>
-                        </TextBlock>
-                    </StackPanel>
+                            <Viewbox x:Name="MapViewbox" MaxWidth="560" HorizontalAlignment="Left" Stretch="Uniform">
+                                <Grid Width="512" Height="512" Background="#222222">
+                                    <Image x:Name="MapImage" Stretch="Fill"/>
+                                    <Canvas x:Name="KillMarkers"/>
+                                </Grid>
+                            </Viewbox>
 
-                    <TextBlock Text="Key events" Opacity="0.7" Margin="0,16,0,4"/>
-                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="EventsList">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Style="{StaticResource TeamRowBorder}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="50"/>
-                                                <ColumnDefinition Width="32"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="32"/>
-                                            </Grid.ColumnDefinitions>
+                            <TextBlock Margin="0,6,0,0" Opacity="0.8">
+            <Run Text="●" Foreground="CornflowerBlue"/><Run Text=" Blue team kill   "/>
+            <Run Text="●" Foreground="IndianRed"/><Run Text=" Red team kill   ·   "/>
+            <Run x:Name="KillCountRun"/>
+                            </TextBlock>
+                        </StackPanel>
 
-                                            <TextBlock Text="{Binding Time}" Opacity="0.7" VerticalAlignment="Center"/>
-                                            <Image Grid.Column="1" Width="26" Height="26" Source="{Binding ActorIcon}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding Text}" Margin="8,0"
-                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                            <Image Grid.Column="3" Width="26" Height="26" Source="{Binding VictimIcon}"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                        <!-- Right: key events -->
+                        <StackPanel x:Name="EventsPanel" Grid.Column="1">
+                            <Grid Height="28" Margin="0,0,0,4">
+                                <TextBlock VerticalAlignment="Center" Opacity="0.7">
+                <Run Text="Key events"/><Run x:Name="EventsCountRun"/>
+                                </TextBlock>
+                            </Grid>
+
+                            <ScrollViewer MinHeight="260"
+                      Height="{Binding ActualHeight, ElementName=MapViewbox}"
+                      VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="EventsList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource TeamRowBorder}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="50"/>
+                                                        <ColumnDefinition Width="32"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="32"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Text="{Binding Time}" Opacity="0.7" VerticalAlignment="Center"/>
+                                                    <Image Grid.Column="1" Width="26" Height="26" Source="{Binding ActorIcon}"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Text}" Margin="8,0"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                                    <Image Grid.Column="3" Width="26" Height="26" Source="{Binding VictimIcon}"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Grid>
+
                 </StackPanel>
-                
             </StackPanel>
-            
+
         </ScrollViewer>
     </Grid>
 </Page>

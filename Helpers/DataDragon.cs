@@ -43,6 +43,24 @@ public static class DataDragon
         }
     }
 
+    public static string? ObjectiveIcon(string? kind, int team)
+    {
+
+        return $"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-match-history/global/default/{kind}-{team}.png";
+    }
+
+    public static string ObjectiveLetter(string? kind) => kind switch
+    {
+        "baron" => "B",
+        "dragon" => "D",
+        "herald" => "H",
+        "grubs" => "V",
+        "tower" => "T",
+        "inhibitor" => "I",
+        "atakhan" => "A",
+        _ => "•",
+    };
+
     public static string ItemIconUrl(int itemId) =>
         $"https://ddragon.leagueoflegends.com/cdn/{_latestVersion}/img/item/{itemId}.png";
     public static string ChampioIconUrl(int championId) =>

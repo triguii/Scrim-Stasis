@@ -1,19 +1,21 @@
 ﻿using BlossomiShymae.Briar;
+using Microsoft.Win32;
 using ScrimStasis;
+using ScrimStasis.DataModels;
+using ScrimStasis.Helpers;
 using ScrimStasis.ViewModels;
+using System.Globalization;
+using System.IO;
 using System.Net.Http.Json;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.IO;
-using System.Text.Encodings.Web;
-using Microsoft.Win32;
-using System.Globalization;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Shapes;
-using ScrimStasis.Helpers;
-using ScrimStasis.DataModels;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 
 namespace ScrimStasis.Pages;
@@ -32,12 +34,25 @@ public partial class GameDetailsPage : Page
     private List<(Participant Blue, Participant Red)> _matchups = new();
     private double _matchupScale = 1000;
     private record KillInfo(long Timestamp, int KillerId, int KillerTeam, double X, double Y, string Tooltip);
-    private record KillFilterOption(string Name, Func<KillInfo, bool> Match);
+    private record KillFilterOption(string Name, int? TeamId = null, int? KillerId = null)
+    {
+        public bool Matches(int actingTeam, int killerId) =>
+            (TeamId is null || actingTeam == TeamId) &&
+            (KillerId is null || killerId == KillerId);
+    }
+    private List<TimelineEventRow> _allEventRows = new();
+    private double _eventLimitMs = double.MaxValue;
 
     private List<KillInfo> _kills = new();
 
     // In-game coordinate range used by Summoner's Rift positions
     private const double MapMin = -120, MapMax = 14870, MapPx = 512;
+
+    //For slider value
+    private int CurrentFrameIndex() =>
+    _goldSeries.Count == 0
+        ? 0
+        : Math.Clamp((int)Math.Round(TimeSlider?.Value ?? 0), 0, _goldSeries.Count - 1);
 
 
     public GameDetailsPage(long gameId)
@@ -134,7 +149,6 @@ public partial class GameDetailsPage : Page
                 Kda = $"{s.Kills}/{s.Deaths}/{s.Assists}",
                 Cs = s.TotalMinionsKilled + s.NeutralMinionsKilled,
                 Gold = s.GoldEarned.ToString("N0"),
-                DamageTaken = s.TotalDamageTaken.ToString("N0"),
                 Vision = s.VisionScore,
                 Damage = s.TotalDamageDealtToChampions,
                 DamageText = s.TotalDamageDealtToChampions.ToString("N0"),
@@ -314,12 +328,30 @@ public partial class GameDetailsPage : Page
 
         var byId = game.Participants.ToDictionary(p => p.ParticipantId);
 
-        EventsList.ItemsSource = timeline.Frames
+        _allEventRows = timeline.Frames
             .SelectMany(f => f.Events)
             .OrderBy(ev => ev.Timestamp)
             .Select(ev => ToEventRow(game, byId, ev))
-            .Where(r => r is not null)
+            .OfType<TimelineEventRow>()    
             .ToList();
+
+        RefreshEventsList();
+        DrawObjectiveMarkers();
+    }
+
+    private void RefreshEventsList()
+    {
+        if (EventsList is null) return;
+
+        var filter = KillFilter?.SelectedItem as KillFilterOption;
+
+        var shown = _allEventRows
+            .Where(r => r.Timestamp <= _eventLimitMs
+                        && (filter is null || filter.Matches(r.ActingTeamId, r.KillerId)))
+            .ToList();
+
+        EventsList.ItemsSource = shown;
+        EventsCountRun.Text = $" · {shown.Count} of {_allEventRows.Count}";
     }
 
     private static TimelineEventRow? ToEventRow(Game game, Dictionary<int, Participant> byId, TimelineEvent ev)
@@ -356,13 +388,34 @@ public partial class GameDetailsPage : Page
                 break;
         }
 
+        //Icons for objectives
+
+        string? objectiveKind = ev.Type switch
+        {
+            "BUILDING_KILL" => ev.BuildingType.StartsWith("INHIBITOR") ? "inhibitor" : "tower",
+            "ELITE_MONSTER_KILL" => ev.MonsterType switch
+            {
+                "DRAGON" => "dragon",
+                "BARON_NASHOR" => "baron",
+                "RIFTHERALD" => "herald",
+                "HORDE" => "grubs",
+                "ATAKHAN" => "atakhan",
+                _ => "objective",
+            },
+            _ => null,   // CHAMPION_KILL
+        };
+
         return new TimelineEventRow
         {
+            Timestamp = ev.Timestamp,
             Time = time,
             Text = text,
             ActorIcon = killer is null ? null : DataDragon.ChampioIconUrl(killer.ChampionId),
             VictimIcon = victim is null ? null : DataDragon.ChampioIconUrl(victim.ChampionId),
             ActingTeamId = actingTeam,
+            Kind = objectiveKind,
+            ObjectiveIconUrl = DataDragon.ObjectiveIcon(objectiveKind, actingTeam),
+            KillerId = ev.KillerId,
         };
     }
 
@@ -384,6 +437,7 @@ public partial class GameDetailsPage : Page
 
     private void DrawGoldChart()
     {
+        if (GoldCanvas is null) return;
         GoldCanvas.Children.Clear();
         if (_goldSeries.Count < 2 || GoldCanvas.ActualWidth < 50) return;
 
@@ -426,16 +480,79 @@ public partial class GameDetailsPage : Page
             Label($"{m}m", X(m) - 8, h - bottom + 3);
 
 
-        var line = new Polyline
+        // ---- Gold line ----
+        int cur = CurrentFrameIndex();
+
+        var past = new Polyline
         {
             Stroke = Brushes.MediumPurple,
             StrokeThickness = 2.5,
             StrokeLineJoin = PenLineJoin.Round,
         };
-        foreach (var p in _goldSeries)
-            line.Points.Add(new Point(X(p.Minute), Y(p.Diff)));
+        var future = new Polyline
+        {
+            Stroke = Brushes.MediumPurple,
+            StrokeThickness = 2,
+            Opacity = 0.3,
+            StrokeDashArray = new DoubleCollection { 3, 3 },
+        };
 
-        GoldCanvas.Children.Add(line);
+        for (int i = 0; i < _goldSeries.Count; i++)
+        {
+            var pt = new Point(X(_goldSeries[i].Minute), Y(_goldSeries[i].Diff));
+            if (i <= cur) past.Points.Add(pt);
+            if (i >= cur) future.Points.Add(pt);     // shares the current point so the line stays connected
+        }
+
+
+        GoldCanvas.Children.Add(future);       
+        GoldCanvas.Children.Add(past);
+
+        // ---- Marker for the slider's current moment ----
+        var now = _goldSeries[cur];
+        double nx = X(now.Minute), ny = Y(now.Diff);
+
+        GoldCanvas.Children.Add(new Line
+        {
+            X1 = nx,
+            X2 = nx,
+            Y1 = top,
+            Y2 = top + plotH,
+            Stroke = Brushes.MediumPurple,
+            StrokeThickness = 1.5,
+        });
+
+        var markerDot = new Ellipse
+        {
+            Width = 12,
+            Height = 12,
+            Fill = now.Diff >= 0 ? Brushes.CornflowerBlue : Brushes.IndianRed,
+            Stroke = Brushes.White,
+            StrokeThickness = 2,
+        };
+        Canvas.SetLeft(markerDot, nx - 6);
+        Canvas.SetTop(markerDot, ny - 6);
+        GoldCanvas.Children.Add(markerDot);
+
+        var lead = now.Diff switch
+        {
+            > 0 => $"Blue +{now.Diff:N0}",
+            < 0 => $"Red +{-now.Diff:N0}",
+            _ => "Even",
+        };
+        var nowLabel = new TextBlock
+        {
+            Text = $"{TimeSpan.FromMinutes(now.Minute):m\\:ss} · {lead}",
+            FontSize = 11,
+            Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x22, 0x22, 0x22)),
+            Padding = new Thickness(4, 1, 4, 1),
+        };
+        nowLabel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        double lx = nx + 6 + nowLabel.DesiredSize.Width > w ? nx - 6 - nowLabel.DesiredSize.Width : nx + 6;
+        Canvas.SetLeft(nowLabel, lx);
+        Canvas.SetTop(nowLabel, top);
+        GoldCanvas.Children.Add(nowLabel);
     }
 
     //Matchups gold
@@ -463,7 +580,12 @@ public partial class GameDetailsPage : Page
         frame.ParticipantFrames.TryGetValue(participantId.ToString(), out var pf) ? pf.TotalGold : 0;
 
     private void TimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        => UpdateMatchups();
+    {
+        RefreshKillMap();
+        UpdateMatchups();
+        DrawGoldChart();
+    }
+        
 
     private void UpdateMatchups()
     {
@@ -503,9 +625,11 @@ public partial class GameDetailsPage : Page
         if (game.MapId is not (0 or 11))
         {
             KillMapPanel.Visibility = Visibility.Collapsed;
+            MapColumn.Width = new GridLength(0);                       
             return;
         }
         KillMapPanel.Visibility = Visibility.Visible;
+        MapColumn.Width = new GridLength(1.2, GridUnitType.Star);
 
         var byId = game.Participants.ToDictionary(p => p.ParticipantId);
 
@@ -536,22 +660,21 @@ public partial class GameDetailsPage : Page
 
 
         // Time slider
-        KillTimeSlider.Maximum = Math.Max(1, Math.Ceiling(timeline.Frames.Max(f => f.Timestamp) / 60000.0));
-        KillTimeSlider.Value = KillTimeSlider.Maximum;
+        //KillTimeSlider.Maximum = Math.Max(1, Math.Ceiling(timeline.Frames.Max(f => f.Timestamp) / 60000.0));
+        //KillTimeSlider.Value = KillTimeSlider.Maximum;
 
         // Filters: everyone, each team, each player
         var filters = new List<KillFilterOption>
-    {
-        new("All kills", _ => true),
-        new("Blue team kills", k => k.KillerTeam == 100),
-        new("Red team kills", k => k.KillerTeam == 200),
-    };
+        {
+            new("All players"),
+            new("Blue team", TeamId: 100),
+            new("Red team", TeamId: 200),
+        };
 
         foreach (var p in game.Participants.OrderBy(p => p.TeamId).ThenBy(p => p.ParticipantId))
         {
-            var id = p.ParticipantId;
             var side = p.TeamId == 100 ? "blue" : "red";
-            filters.Add(new($"{ShortName(game, id)} ({side})", k => k.KillerId == id));
+            filters.Add(new($"{ShortName(game, p.ParticipantId)} ({side})", KillerId: p.ParticipantId));
         }
 
         KillFilter.ItemsSource = filters;
@@ -559,8 +682,11 @@ public partial class GameDetailsPage : Page
         RefreshKillMap();
     }
 
-    private void KillFilter_Changed(object sender, SelectionChangedEventArgs e) => RefreshKillMap();
-
+    private void KillFilter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        RefreshKillMap();
+        RefreshEventsList();  
+    }
     private void KillTimeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         => RefreshKillMap();
 
@@ -570,10 +696,14 @@ public partial class GameDetailsPage : Page
         if (KillFilter?.SelectedItem is not KillFilterOption filter || KillMarkers is null)
             return;
 
-        double limitMs = KillTimeSlider.Value * 60000;
-        KillTimeText.Text = $"Up to {KillTimeSlider.Value:0} min";
+        double limitMs = TimeSlider.Value * 60000;
+        _eventLimitMs = limitMs;          // new
+        RefreshEventsList();              // new
+        KillTimeText.Text = $"Up to {TimeSlider.Value:0} min";
 
-        var shown = _kills.Where(k => k.Timestamp <= limitMs && filter.Match(k)).ToList();
+        var shown = _kills
+            .Where(k => k.Timestamp <= limitMs && filter.Matches(k.KillerTeam, k.KillerId))
+            .ToList();
 
         KillMarkers.Children.Clear();
         foreach (var k in shown)
@@ -599,6 +729,141 @@ public partial class GameDetailsPage : Page
         }
 
         KillCountRun.Text = shown.Count == 1 ? "1 kill shown" : $"{shown.Count} kills shown";
+    }
+
+    //Icons for slider
+
+    private void TimeSlider_SizeChanged(object sender, SizeChangedEventArgs e) => DrawObjectiveMarkers();
+
+    // Maps a timestamp (ms) to the slider's value, which is a frame index
+    private double TimestampToSliderValue(long ts)
+    {
+        var frames = _timelineFrames!;
+        if (ts <= frames[0].Timestamp) return 0;
+
+        for (int i = 0; i < frames.Count - 1; i++)
+        {
+            long a = frames[i].Timestamp, b = frames[i + 1].Timestamp;
+            if (ts >= a && ts <= b)
+                return b == a ? i : i + (ts - a) / (double)(b - a);
+        }
+        return frames.Count - 1;
+    }
+
+    // Where the slider's thumb can actually travel
+    private bool TryGetSliderGeometry(out double start, out double length)
+    {
+        start = length = 0;
+        if (!TimeSlider.IsLoaded) return false;
+
+        TimeSlider.ApplyTemplate();
+        if (TimeSlider.Template?.FindName("PART_Track", TimeSlider) is not Track track
+            || track.ActualWidth <= 0)
+            return false;
+
+        double thumb = track.Thumb?.ActualWidth ?? 0;
+        var origin = track.TransformToAncestor(TimeSlider).Transform(new Point(0, 0));
+
+        start = origin.X + thumb / 2;
+        length = track.ActualWidth - thumb;
+        return length > 0;
+    }
+
+    private void DrawObjectiveMarkers()
+    {
+        if (ObjectiveMarkers is null) return;
+        ObjectiveMarkers.Children.Clear();
+
+        if (_timelineFrames is null || _timelineFrames.Count < 2 || TimeSlider.Maximum <= 0) return;
+        if (!TryGetSliderGeometry(out var start, out var length)) return;
+
+        const double size = 24, gap = 2;
+
+        var markers = _allEventRows
+            .Where(r => r.Kind is not null)                 
+            .OrderBy(r => r.Timestamp)
+            .Select(r =>
+            {
+                double value = TimestampToSliderValue(r.Timestamp);
+                return (Row: r, Value: value, X: start + value / TimeSlider.Maximum * length);
+            })
+            .ToList();
+
+        // Stack markers that would overlap into extra rows
+        var rowRight = new List<double>();
+        var placed = new List<(TimelineEventRow Row, double Value, double X, int Layer)>();
+
+        foreach (var m in markers)
+        {
+            int layer = rowRight.FindIndex(right => m.X - size / 2 >= right + gap);
+            if (layer < 0)
+            {
+                rowRight.Add(0);
+                layer = rowRight.Count - 1;
+            }
+            rowRight[layer] = m.X + size / 2;
+            placed.Add((m.Row, m.Value, m.X, layer));
+        }
+
+        int layers = Math.Max(1, rowRight.Count);
+        ObjectiveMarkers.Height = layers * (size + gap);
+
+        foreach (var m in placed)
+        {
+            var el = CreateObjectiveMarker(m.Row, m.Value);
+            Canvas.SetLeft(el, m.X - size / 2);
+            Canvas.SetTop(el, ObjectiveMarkers.Height - (m.Layer + 1) * (size + gap));  // layer 0 sits nearest the slider
+            ObjectiveMarkers.Children.Add(el);
+        }
+    }
+
+    private FrameworkElement CreateObjectiveMarker(TimelineEventRow row, double sliderValue)
+    {
+        var teamBrush = row.ActingTeamId == 200 ? Brushes.IndianRed : Brushes.CornflowerBlue;
+
+        TextBlock Letter() => new()
+        {
+            Text = DataDragon.ObjectiveLetter(row.Kind),
+            Foreground = Brushes.White,
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+
+        var badge = new Border
+        {
+            Width = 24,
+            Height = 24,
+            CornerRadius = new CornerRadius(12),
+            BorderBrush = teamBrush,
+            BorderThickness = new Thickness(2),
+            Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x20, 0x20, 0x20)),
+            Cursor = Cursors.Hand,
+            ToolTip = $"{row.Time} · {row.Text}",
+        };
+        ToolTipService.SetInitialShowDelay(badge, 100);
+
+        if (row.ObjectiveIconUrl is { } url)
+        {
+            var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(2) };
+            image.ImageFailed += (_, _) =>
+            {
+                badge.Background = teamBrush;
+                badge.Child = Letter();
+            };
+            image.Source = new BitmapImage(new Uri(url));
+            badge.Child = image;
+        }
+        else
+        {
+            badge.Background = teamBrush;
+            badge.Child = Letter();
+        }
+
+        badge.MouseLeftButtonUp += (_, _) => TimeSlider.Value = Math.Round(sliderValue);
+
+        return badge;
     }
 
     //Buttons
