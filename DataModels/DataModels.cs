@@ -144,6 +144,6 @@ public class TimelineEvent
     public string MonsterSubType { get; set; } = "";
     public string BuildingType { get; set; } = "";
     public string LaneType { get; set; } = "";
-    public EventPosition? Position { get; set; }    // new
+    public EventPosition? Position { get; set; }  
 
 }
